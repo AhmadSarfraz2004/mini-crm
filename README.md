@@ -56,7 +56,7 @@ Users can:
   assignedTo: String,
   createdAt: Date
 }
-```
+
 ---
 
 ## Project Structure
@@ -91,6 +91,7 @@ mini-crm/
 ├── .gitignore
 └── README.md
 
+```
 ---
 
 ## Author
