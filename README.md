@@ -56,7 +56,7 @@ Users can:
   assignedTo: String,
   createdAt: Date
 }
-
+```
 ---
 
 ## Project Structure
