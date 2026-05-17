@@ -1,5 +1,7 @@
 const Lead = require('../models/Lead');
 
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // Create a new lead
 const createLead = async (req, res) => {
     try {
@@ -18,24 +20,62 @@ const createLead = async (req, res) => {
     }
 };
 
-// GET ALL LEADS WITH PAGINATION
+// GET ALL LEADS WITH PAGINATION, SEARCH, AND STATUS FILTERING
 const getLeads = async (req, res) => {
     try {
-        const page = Number(req.query.page) || 1;
+        const page = Math.max(Number(req.query.page) || 1, 1);
         const limit = 5;
+        const search = String(req.query.search || '').trim();
+        const status = String(req.query.status || '').trim();
+        const query = {};
 
-        const totalLeads = await Lead.countDocuments();
+        if (search) {
+            const searchRegex = new RegExp(escapeRegExp(search), 'i');
+            query.$or = [
+                { name: searchRegex },
+                { email: searchRegex },
+                { phone: searchRegex }
+            ];
+        }
 
-        const leads = await Lead.find()
+        if (status) {
+            query.status = new RegExp(`^${escapeRegExp(status)}$`, 'i');
+        }
+
+        const [
+            totalLeads,
+            totalLeadStats,
+            newLeadStats,
+            contactedLeadStats,
+            convertedLeadStats,
+            lostLeadStats
+        ] = await Promise.all([
+            Lead.countDocuments(query),
+            Lead.countDocuments(),
+            Lead.countDocuments({ status: /^New$/i }),
+            Lead.countDocuments({ status: /^Contacted$/i }),
+            Lead.countDocuments({ status: /^Converted$/i }),
+            Lead.countDocuments({ status: /^Lost$/i })
+        ]);
+        const totalPages = Math.max(Math.ceil(totalLeads / limit), 1);
+
+        const leads = await Lead.find(query)
+            .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
-            .limit(limit)
-            .sort({ createdAt: -1 });
+            .limit(limit);
 
         res.status(200).json({
             totalLeads,
             currentPage: page,
-            totalPages: Math.ceil(totalLeads / limit),
+            totalPages,
             leads,
+            stats: {
+                total: totalLeadStats,
+                new: newLeadStats,
+                contacted: contactedLeadStats,
+                converted: convertedLeadStats,
+                lost: lostLeadStats
+            },
         });
     } catch (error) {
         res.status(400).json({ message: error.message });
