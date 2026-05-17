@@ -106,3 +106,25 @@ Generate JWT
 ↓
 Send response
 */
+
+/*
+================================================
+API Flow
+================================================
+server.js → routes file → controller function → model/database → response
+
+Frontend sends POST request
+↓
+POST /api/auth/register
+↓
+server.js sends it to authRoutes.js
+↓
+authRoutes.js calls registerUser
+↓
+registerUser uses User model
+↓
+MongoDB saves data
+↓
+Backend sends JSON response
+
+*/
