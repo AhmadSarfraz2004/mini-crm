@@ -81,3 +81,28 @@ module.exports = {
   registerUser,
   loginUser,
 };
+
+
+/*
+What is a Controller?
+A controller is a component in the MVC (Model-View-Controller) pattern that handles the incoming requests from the client, processes them (often by interacting with the model), and returns an appropriate response.
+-> Routes only decide which controller function to call based on the URL and HTTP method, while controllers contain the actual logic for handling the request.
+In this file, we have two main functions: registerUser and loginUser. These functions handle the logic for user registration and login, respectively. They interact with the User model to create new users and validate existing users, and they use bcrypt for password hashing and jwt for token generation.
+*/
+
+/*
+===============================================
+Authentication Flow
+===============================================
+Register/Login Request
+↓
+Controller receives data
+↓
+Check user
+↓
+Hash/compare password
+↓
+Generate JWT
+↓
+Send response
+*/
