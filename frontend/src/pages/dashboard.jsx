@@ -6,6 +6,48 @@ import Notification from "../components/Notification";
 import ConfirmationModal from "../components/ConfirmationModal";
 import "../styles/dashboard.css";
 
+const initialLeadFormData = {
+    name: "",
+    email: "",
+    phone: "",
+    assignedTo: "",
+};
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phonePattern = /^\d{11}$/;
+
+const validateLeadForm = (data) => {
+    const values = {
+        name: data.name.trim(),
+        email: data.email.trim(),
+        phone: data.phone.trim(),
+        assignedTo: data.assignedTo.trim(),
+    };
+    const errors = {};
+
+    if (!values.name) {
+        errors.name = "Name is required.";
+    }
+
+    if (!values.email) {
+        errors.email = "Email is required.";
+    } else if (!emailPattern.test(values.email)) {
+        errors.email = "Enter a valid email address.";
+    }
+
+    if (!values.phone) {
+        errors.phone = "Phone is required.";
+    } else if (!phonePattern.test(values.phone)) {
+        errors.phone = "Phone must be exactly 11 digits.";
+    }
+
+    if (!values.assignedTo) {
+        errors.assignedTo = "Assigned To is required.";
+    }
+
+    return { values, errors };
+};
+
 const getStoredUser = () => {
     try {
         return JSON.parse(localStorage.getItem("user")) || null;
@@ -46,12 +88,8 @@ function Dashboard() {
         return localStorage.getItem("dashboard-theme") || "light";
     });
 
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        assignedTo: "",
-    });
+    const [formData, setFormData] = useState(initialLeadFormData);
+    const [formErrors, setFormErrors] = useState({});
 
     const statusOptions = ["new", "contacted", "converted", "lost"];
     const filterOptions = [
@@ -144,6 +182,16 @@ function Dashboard() {
             ...currentData,
             [name]: value,
         }));
+
+        setFormErrors((currentErrors) => {
+            if (!currentErrors[name]) {
+                return currentErrors;
+            }
+
+            const nextErrors = { ...currentErrors };
+            delete nextErrors[name];
+            return nextErrors;
+        });
     };
 
     const getLeadFilters = () => ({
@@ -153,23 +201,28 @@ function Dashboard() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const { values, errors } = validateLeadForm(formData);
+
+        setFormErrors(errors);
+
+        if (Object.keys(errors).length > 0) {
+            showNotification("Please fix the highlighted fields", "danger");
+            return;
+        }
+
         setProcessingLabel("Adding lead...");
 
         try {
             const token = localStorage.getItem("token");
 
-            await API.post("/leads", formData, {
+            await API.post("/leads", values, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
 
-            setFormData({
-                name: "",
-                email: "",
-                phone: "",
-                assignedTo: "",
-            });
+            setFormData(initialLeadFormData);
+            setFormErrors({});
 
             if (currentPage === 1) {
                 await fetchLeads(1, getLeadFilters());
@@ -182,6 +235,10 @@ function Dashboard() {
         } catch (error) {
             console.log(error);
             if (!handleUnauthorized(error)) {
+                if (error.response?.data?.errors) {
+                    setFormErrors(error.response.data.errors);
+                }
+
                 showNotification(error.response?.data?.message || "Failed to add lead", "danger");
             }
         } finally {
@@ -821,44 +878,92 @@ function Dashboard() {
                                 ></button>
                             </div>
 
-                            <form className="dashboard-modal-form" onSubmit={handleSubmit}>
+                            <form className="dashboard-modal-form" onSubmit={handleSubmit} noValidate>
                                 <div className="modal-body">
-                                    <input
-                                        className="form-control"
-                                        type="text"
-                                        name="name"
-                                        placeholder="Name"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                    <input
-                                        className="form-control"
-                                        type="email"
-                                        name="email"
-                                        placeholder="Email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                    <input
-                                        className="form-control"
-                                        type="text"
-                                        name="phone"
-                                        placeholder="Phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                    <input
-                                        className="form-control"
-                                        type="text"
-                                        name="assignedTo"
-                                        placeholder="Assigned To"
-                                        value={formData.assignedTo}
-                                        onChange={handleChange}
-                                        required
-                                    />
+                                    <div className="dashboard-form-field">
+                                        <input
+                                            className={`form-control ${formErrors.name ? "is-invalid" : ""}`}
+                                            type="text"
+                                            name="name"
+                                            placeholder="Name"
+                                            value={formData.name}
+                                            onChange={handleChange}
+                                            aria-invalid={Boolean(formErrors.name)}
+                                            aria-describedby={formErrors.name ? "lead-name-error" : undefined}
+                                            autoComplete="name"
+                                            required
+                                        />
+                                        {formErrors.name && (
+                                            <p className="dashboard-field-error" id="lead-name-error">
+                                                {formErrors.name}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="dashboard-form-field">
+                                        <input
+                                            className={`form-control ${formErrors.email ? "is-invalid" : ""}`}
+                                            type="email"
+                                            name="email"
+                                            placeholder="Email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            aria-invalid={Boolean(formErrors.email)}
+                                            aria-describedby={formErrors.email ? "lead-email-error" : undefined}
+                                            autoComplete="email"
+                                            required
+                                        />
+                                        {formErrors.email && (
+                                            <p className="dashboard-field-error" id="lead-email-error">
+                                                {formErrors.email}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="dashboard-form-field">
+                                        <input
+                                            className={`form-control ${formErrors.phone ? "is-invalid" : ""}`}
+                                            type="text"
+                                            name="phone"
+                                            placeholder="Phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            aria-invalid={Boolean(formErrors.phone)}
+                                            aria-describedby={formErrors.phone ? "lead-phone-error" : undefined}
+                                            autoComplete="tel"
+                                            inputMode="numeric"
+                                            pattern="[0-9]{11}"
+                                            maxLength={11}
+                                            required
+                                        />
+                                        {formErrors.phone && (
+                                            <p className="dashboard-field-error" id="lead-phone-error">
+                                                {formErrors.phone}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="dashboard-form-field">
+                                        <input
+                                            className={`form-control ${formErrors.assignedTo ? "is-invalid" : ""}`}
+                                            type="text"
+                                            name="assignedTo"
+                                            placeholder="Assigned To"
+                                            value={formData.assignedTo}
+                                            onChange={handleChange}
+                                            aria-invalid={Boolean(formErrors.assignedTo)}
+                                            aria-describedby={
+                                                formErrors.assignedTo ? "lead-assigned-to-error" : undefined
+                                            }
+                                            autoComplete="off"
+                                            required
+                                        />
+                                        {formErrors.assignedTo && (
+                                            <p className="dashboard-field-error" id="lead-assigned-to-error">
+                                                {formErrors.assignedTo}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="modal-footer dashboard-modal-actions">

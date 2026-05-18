@@ -1,18 +1,27 @@
 const mongoose = require('mongoose');
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phonePattern = /^\d{11}$/;
+
 const leadSchema = new mongoose.Schema(
     {
         name: {
             type: String,
-            required: true
+            required: [true, 'Name is required.'],
+            trim: true
         },
         email: {
             type: String,
-            required: true
+            required: [true, 'Email is required.'],
+            trim: true,
+            lowercase: true,
+            match: [emailPattern, 'Enter a valid email address.']
         },
         phone: {
             type: String,
-            required: true
+            required: [true, 'Phone is required.'],
+            trim: true,
+            match: [phonePattern, 'Phone must be exactly 11 digits.']
         },
         status: {
             type: String,
@@ -21,7 +30,8 @@ const leadSchema = new mongoose.Schema(
         },
         assignedTo: {
             type: String,
-            required: true
+            required: [true, 'Assigned To is required.'],
+            trim: true
         }
     },
     {

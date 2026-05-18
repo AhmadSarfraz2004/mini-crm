@@ -1,18 +1,62 @@
 const Lead = require('../models/Lead');
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phonePattern = /^\d{11}$/;
+
+const sanitizeRequiredString = (value) => {
+    if (typeof value !== 'string' && typeof value !== 'number') {
+        return '';
+    }
+
+    return String(value).trim();
+};
+
+const validateLeadPayload = (body = {}) => {
+    const values = {
+        name: sanitizeRequiredString(body.name),
+        email: sanitizeRequiredString(body.email).toLowerCase(),
+        phone: sanitizeRequiredString(body.phone),
+        assignedTo: sanitizeRequiredString(body.assignedTo)
+    };
+    const errors = {};
+
+    if (!values.name) {
+        errors.name = 'Name is required.';
+    }
+
+    if (!values.email) {
+        errors.email = 'Email is required.';
+    } else if (!emailPattern.test(values.email)) {
+        errors.email = 'Enter a valid email address.';
+    }
+
+    if (!values.phone) {
+        errors.phone = 'Phone is required.';
+    } else if (!phonePattern.test(values.phone)) {
+        errors.phone = 'Phone must be exactly 11 digits.';
+    }
+
+    if (!values.assignedTo) {
+        errors.assignedTo = 'Assigned To is required.';
+    }
+
+    return { values, errors };
+};
 
 // Create a new lead
 const createLead = async (req, res) => {
     try {
-        const { name, email, phone, assignedTo } = req.body;
+        const { values, errors } = validateLeadPayload(req.body);
 
-        const lead = await Lead.create({
-            name,
-            email,
-            phone,
-            assignedTo
-        });
+        if (Object.keys(errors).length > 0) {
+            return res.status(400).json({
+                message: 'Please fix the highlighted fields',
+                errors
+            });
+        }
+
+        const lead = await Lead.create(values);
 
         res.status(201).json(lead);
     } catch (error) {
