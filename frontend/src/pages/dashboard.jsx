@@ -13,6 +13,8 @@ const initialLeadFormData = {
     assignedTo: "",
 };
 
+const getLeadId = (lead) => lead?._id || lead?.id || "";
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\d{11}$/;
 
@@ -91,6 +93,14 @@ function Dashboard() {
     const [formData, setFormData] = useState(initialLeadFormData);
     const [formErrors, setFormErrors] = useState({});
     const [editingLeadId, setEditingLeadId] = useState(null);
+    const editingLeadIdRef = useRef(null);
+    const resetLeadForm = useCallback(() => {
+        editingLeadIdRef.current = null;
+        setEditingLeadId(null);
+        setFormData(initialLeadFormData);
+        setFormErrors({});
+        setOpenStatusDropdown(null);
+    }, []);
 
     const statusOptions = ["new", "contacted", "converted", "lost"];
     const filterOptions = [
@@ -215,16 +225,14 @@ function Dashboard() {
     });
 
     const handleOpenAddLead = () => {
-        setEditingLeadId(null);
-        setFormData(initialLeadFormData);
-        setFormErrors({});
-        setOpenStatusDropdown(null);
+        resetLeadForm();
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const { values, errors } = validateLeadForm(formData);
-        const isUpdating = Boolean(editingLeadId);
+        const leadId = String(editingLeadIdRef.current || editingLeadId || "").trim();
+        const isUpdating = Boolean(leadId);
 
         setFormErrors(errors);
 
@@ -239,7 +247,7 @@ function Dashboard() {
             const token = localStorage.getItem("token");
 
             if (isUpdating) {
-                await API.put(`/leads/${editingLeadId}`, values, {
+                await API.put(`/leads/${leadId}`, values, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -254,6 +262,7 @@ function Dashboard() {
 
             setFormData(initialLeadFormData);
             setFormErrors({});
+            editingLeadIdRef.current = null;
             setEditingLeadId(null);
 
             if (isUpdating) {
@@ -273,6 +282,13 @@ function Dashboard() {
                     setFormErrors(error.response.data.errors);
                 }
 
+                if (isUpdating && error.response?.status === 404) {
+                    editingLeadIdRef.current = null;
+                    setEditingLeadId(null);
+                    await fetchLeads(currentPage, getLeadFilters());
+                    closeAddLeadModal();
+                }
+
                 showNotification(
                     error.response?.data?.message ||
                     (isUpdating ? "Failed to update lead" : "Failed to add lead"),
@@ -285,7 +301,16 @@ function Dashboard() {
     };
 
     const handleUpdateLead = (lead) => {
-        setEditingLeadId(lead._id);
+        const leadId = getLeadId(lead);
+
+        if (!leadId) {
+            showNotification("Unable to edit this lead. Refreshing list...", "danger");
+            fetchLeads(currentPage, getLeadFilters());
+            return;
+        }
+
+        editingLeadIdRef.current = leadId;
+        setEditingLeadId(leadId);
         setFormData({
             name: lead.name || "",
             email: lead.email || "",
@@ -318,6 +343,10 @@ function Dashboard() {
         } catch (error) {
             console.log(error);
             if (!handleUnauthorized(error)) {
+                if (error.response?.status === 404) {
+                    await fetchLeads(currentPage, getLeadFilters());
+                }
+
                 showNotification(error.response?.data?.message || "Failed to update status", "danger");
             }
         } finally {
@@ -328,6 +357,14 @@ function Dashboard() {
     const toggleStatusDropdown = (event, lead, status) => {
         event.stopPropagation();
 
+        const leadId = getLeadId(lead);
+
+        if (!leadId) {
+            showNotification("Unable to update this lead. Refreshing list...", "danger");
+            fetchLeads(currentPage, getLeadFilters());
+            return;
+        }
+
         const rect = event.currentTarget.getBoundingClientRect();
         const menuHeight = 178;
         const spaceBelow = window.innerHeight - rect.bottom;
@@ -337,13 +374,13 @@ function Dashboard() {
                 : rect.bottom + 8;
 
         setOpenStatusDropdown((currentDropdown) => {
-            if (currentDropdown?.leadId === lead._id) {
+            if (currentDropdown?.leadId === leadId) {
                 return null;
             }
 
             return {
                 currentStatus: status,
-                leadId: lead._id,
+                leadId,
                 leadName: lead.name || "lead",
                 left: rect.left,
                 top,
@@ -353,6 +390,12 @@ function Dashboard() {
     };
 
     const handleDeleteLead = async (leadId) => {
+        if (!leadId) {
+            showNotification("Unable to delete this lead. Refreshing list...", "danger");
+            fetchLeads(currentPage, getLeadFilters());
+            return;
+        }
+
         setPendingDeleteId(leadId);
         setConfirmOpen(true);
     };
@@ -384,6 +427,10 @@ function Dashboard() {
         } catch (error) {
             console.log(error);
             if (!handleUnauthorized(error)) {
+                if (error.response?.status === 404) {
+                    await fetchLeads(currentPage, getLeadFilters());
+                }
+
                 showNotification(error.response?.data?.message || "Failed to delete lead", "danger");
             }
         } finally {
@@ -775,11 +822,12 @@ function Dashboard() {
                                 </thead>
 
                                 <tbody>
-                                    {leads.map((lead) => {
+                                    {leads.map((lead, index) => {
+                                        const leadId = getLeadId(lead);
                                         const status = (lead.status || "new").toLowerCase();
 
                                         return (
-                                            <tr key={lead._id}>
+                                            <tr key={leadId || `${lead.email}-${index}`}>
                                                 <td>
                                                     <div className="dashboard-lead-name">
                                                         <span>{lead.name?.charAt(0) || "L"}</span>
@@ -797,7 +845,7 @@ function Dashboard() {
                                                                 toggleStatusDropdown(event, lead, status)
                                                             }
                                                             aria-expanded={
-                                                                openStatusDropdown?.leadId === lead._id
+                                                                openStatusDropdown?.leadId === leadId
                                                             }
                                                             aria-label={`Update ${lead.name || "lead"} status`}
                                                         >
@@ -820,7 +868,7 @@ function Dashboard() {
                                                         <button
                                                             type="button"
                                                             className="dashboard-delete-button"
-                                                            onClick={() => handleDeleteLead(lead._id)}
+                                                            onClick={() => handleDeleteLead(leadId)}
                                                         >
                                                             <i className="bi bi-trash3-fill" aria-hidden="true"></i>
                                                             <span>Delete</span>

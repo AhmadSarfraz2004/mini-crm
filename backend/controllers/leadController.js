@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Lead = require('../models/Lead');
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -44,6 +45,81 @@ const validateLeadPayload = (body = {}) => {
     return { values, errors };
 };
 
+const duplicateCheckedFields = ['email', 'phone'];
+
+const getLeadIdValues = (id) => {
+    const values = [id];
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+        values.push(new mongoose.Types.ObjectId(id));
+    }
+
+    return values;
+};
+
+const getLeadIdFilter = (id) => ({
+    _id: {
+        $in: getLeadIdValues(id)
+    }
+});
+
+const findDuplicateLead = (values, excludedLeadId, fields = duplicateCheckedFields) => {
+    const duplicateChecks = fields
+        .filter((field) => values[field])
+        .map((field) => ({ [field]: values[field] }));
+
+    if (duplicateChecks.length === 0) {
+        return null;
+    }
+
+    const query = {
+        $or: duplicateChecks
+    };
+
+    if (excludedLeadId) {
+        query._id = { $nin: getLeadIdValues(excludedLeadId) };
+    }
+
+    return Lead.collection.findOne(query);
+};
+
+const findLeadById = (id) => Lead.collection.findOne(getLeadIdFilter(id));
+
+const updateLeadById = async (id, values) => {
+    const result = await Lead.collection.findOneAndUpdate(
+        getLeadIdFilter(id),
+        {
+            $set: {
+                ...values,
+                updatedAt: new Date()
+            }
+        },
+        { returnDocument: 'after' }
+    );
+
+    return result?.value || result;
+};
+
+const deleteLeadById = async (id) => {
+    const result = await Lead.collection.findOneAndDelete(getLeadIdFilter(id));
+
+    return result?.value || result;
+};
+
+const getDuplicateLeadErrors = (lead, values, fields = duplicateCheckedFields) => {
+    const errors = {};
+
+    if (fields.includes('email') && lead.email === values.email) {
+        errors.email = 'A lead with this email already exists.';
+    }
+
+    if (fields.includes('phone') && lead.phone === values.phone) {
+        errors.phone = 'A lead with this phone already exists.';
+    }
+
+    return errors;
+};
+
 // Create a new lead
 const createLead = async (req, res) => {
     try {
@@ -53,6 +129,15 @@ const createLead = async (req, res) => {
             return res.status(400).json({
                 message: 'Please fix the highlighted fields',
                 errors
+            });
+        }
+
+        const duplicateLead = await findDuplicateLead(values);
+
+        if (duplicateLead) {
+            return res.status(409).json({
+                message: 'Lead already exists',
+                errors: getDuplicateLeadErrors(duplicateLead, values)
             });
         }
 
@@ -76,18 +161,29 @@ const updateLead = async (req, res) => {
             });
         }
 
-        const lead = await Lead.findByIdAndUpdate(
-            req.params.id,
-            values,
-            {
-                new: true,
-                runValidators: true
-            }
-        );
+        const existingLead = await findLeadById(req.params.id);
 
-        if (!lead) {
+        if (!existingLead) {
             return res.status(404).json({ message: "Lead not found" });
         }
+
+        const changedDuplicateFields = duplicateCheckedFields.filter(
+            (field) => existingLead[field] !== values[field]
+        );
+        const duplicateLead = await findDuplicateLead(
+            values,
+            req.params.id,
+            changedDuplicateFields
+        );
+
+        if (duplicateLead) {
+            return res.status(409).json({
+                message: 'Lead already exists',
+                errors: getDuplicateLeadErrors(duplicateLead, values, changedDuplicateFields)
+            });
+        }
+
+        const lead = await updateLeadById(req.params.id, values);
 
         res.status(200).json(lead);
     } catch (error) {
@@ -162,10 +258,9 @@ const updateLeadStatus = async (req, res) => {
     try {
         const { status } = req.body;
 
-        const lead = await Lead.findByIdAndUpdate(
+        const lead = await updateLeadById(
             req.params.id,
-            { status },
-            { new: true }
+            { status }
         );
 
         if (!lead) {
@@ -181,7 +276,7 @@ const updateLeadStatus = async (req, res) => {
 // DELETE LEAD
 const deleteLead = async (req, res) => {
     try {
-        const lead = await Lead.findByIdAndDelete(req.params.id);
+        const lead = await deleteLeadById(req.params.id);
 
         if (!lead) {
             return res.status(404).json({ message: "Lead not found" });
