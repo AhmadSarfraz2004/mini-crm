@@ -64,6 +64,37 @@ const createLead = async (req, res) => {
     }
 };
 
+// UPDATE LEAD DETAILS
+const updateLead = async (req, res) => {
+    try {
+        const { values, errors } = validateLeadPayload(req.body);
+
+        if (Object.keys(errors).length > 0) {
+            return res.status(400).json({
+                message: 'Please fix the highlighted fields',
+                errors
+            });
+        }
+
+        const lead = await Lead.findByIdAndUpdate(
+            req.params.id,
+            values,
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!lead) {
+            return res.status(404).json({ message: "Lead not found" });
+        }
+
+        res.status(200).json(lead);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
 // GET ALL LEADS WITH PAGINATION, SEARCH, AND STATUS FILTERING
 const getLeads = async (req, res) => {
     try {
@@ -166,6 +197,7 @@ const deleteLead = async (req, res) => {
 module.exports = {
     createLead,
     getLeads,
+    updateLead,
     updateLeadStatus,
     deleteLead
 };

@@ -262,15 +262,25 @@ body.dashboard-navigation-open {
 }
 
 .dashboard-sidebar-footer button,
-.dashboard-delete-button {
+.dashboard-delete-button,
+.dashboard-update-button {
   border: 0;
   border-radius: 8px;
-  background: rgba(216, 74, 89, 0.1);
-  color: var(--danger);
   cursor: pointer;
   transition:
     background 0.2s ease,
     transform 0.15s ease;
+}
+
+.dashboard-sidebar-footer button,
+.dashboard-delete-button {
+  background: rgba(216, 74, 89, 0.1);
+  color: var(--danger);
+}
+
+.dashboard-update-button {
+  background: rgba(111, 99, 255, 0.1);
+  color: var(--accent);
 }
 
 .dashboard-sidebar-footer button {
@@ -291,8 +301,13 @@ body.dashboard-navigation-open {
   background: rgba(216, 74, 89, 0.18);
 }
 
+.dashboard-update-button:hover {
+  background: rgba(111, 99, 255, 0.18);
+}
+
 .dashboard-sidebar-footer button:active,
-.dashboard-delete-button:active {
+.dashboard-delete-button:active,
+.dashboard-update-button:active {
   transform: scale(0.97);
 }
 
@@ -872,7 +887,14 @@ body.dashboard-navigation-open {
   font-size: 14px;
 }
 
-.dashboard-delete-button {
+.dashboard-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dashboard-delete-button,
+.dashboard-update-button {
   min-height: 36px;
   display: inline-flex;
   align-items: center;

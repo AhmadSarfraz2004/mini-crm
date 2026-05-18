@@ -90,6 +90,7 @@ function Dashboard() {
 
     const [formData, setFormData] = useState(initialLeadFormData);
     const [formErrors, setFormErrors] = useState({});
+    const [editingLeadId, setEditingLeadId] = useState(null);
 
     const statusOptions = ["new", "contacted", "converted", "lost"];
     const filterOptions = [
@@ -112,6 +113,12 @@ function Dashboard() {
     const profileEmail = profileUser?.email || "Signed in";
     const profileInitial = profileName.trim().charAt(0).toUpperCase() || "U";
     const loaderLabel = processingLabel || (isLoading ? "Loading leads..." : "");
+    const isEditingLead = Boolean(editingLeadId);
+    const leadModalTitle = isEditingLead ? "Update Lead" : "Add Lead";
+    const leadModalDescription = isEditingLead
+        ? "Edit contact record details."
+        : "Create a new contact record.";
+    const leadSubmitLabel = isEditingLead ? "Update Lead" : "Add Lead";
     const closeSidebar = () => setIsSidebarOpen(false);
     const closeAddLeadModal = () => {
         const modalElement = addLeadModalRef.current;
@@ -119,6 +126,14 @@ function Dashboard() {
 
         if (modalElement && Modal) {
             Modal.getOrCreateInstance(modalElement).hide();
+        }
+    };
+    const openLeadModal = () => {
+        const modalElement = addLeadModalRef.current;
+        const Modal = window.bootstrap?.Modal;
+
+        if (modalElement && Modal) {
+            Modal.getOrCreateInstance(modalElement).show();
         }
     };
     const handleUnauthorized = useCallback((error) => {
@@ -199,9 +214,17 @@ function Dashboard() {
         statusFilter,
     });
 
+    const handleOpenAddLead = () => {
+        setEditingLeadId(null);
+        setFormData(initialLeadFormData);
+        setFormErrors({});
+        setOpenStatusDropdown(null);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const { values, errors } = validateLeadForm(formData);
+        const isUpdating = Boolean(editingLeadId);
 
         setFormErrors(errors);
 
@@ -210,28 +233,39 @@ function Dashboard() {
             return;
         }
 
-        setProcessingLabel("Adding lead...");
+        setProcessingLabel(isUpdating ? "Updating lead..." : "Adding lead...");
 
         try {
             const token = localStorage.getItem("token");
 
-            await API.post("/leads", values, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            if (isUpdating) {
+                await API.put(`/leads/${editingLeadId}`, values, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            } else {
+                await API.post("/leads", values, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            }
 
             setFormData(initialLeadFormData);
             setFormErrors({});
+            setEditingLeadId(null);
 
-            if (currentPage === 1) {
+            if (isUpdating) {
+                await fetchLeads(currentPage, getLeadFilters());
+            } else if (currentPage === 1) {
                 await fetchLeads(1, getLeadFilters());
             } else {
                 setCurrentPage(1);
             }
 
             closeAddLeadModal();
-            showNotification("Lead added", "success");
+            showNotification(isUpdating ? "Lead updated" : "Lead added", "success");
         } catch (error) {
             console.log(error);
             if (!handleUnauthorized(error)) {
@@ -239,11 +273,28 @@ function Dashboard() {
                     setFormErrors(error.response.data.errors);
                 }
 
-                showNotification(error.response?.data?.message || "Failed to add lead", "danger");
+                showNotification(
+                    error.response?.data?.message ||
+                    (isUpdating ? "Failed to update lead" : "Failed to add lead"),
+                    "danger"
+                );
             }
         } finally {
             setProcessingLabel("");
         }
+    };
+
+    const handleUpdateLead = (lead) => {
+        setEditingLeadId(lead._id);
+        setFormData({
+            name: lead.name || "",
+            email: lead.email || "",
+            phone: lead.phone || "",
+            assignedTo: lead.assignedTo || "",
+        });
+        setFormErrors({});
+        setOpenStatusDropdown(null);
+        openLeadModal();
     };
 
     const handleStatusChange = async (leadId, newStatus) => {
@@ -698,6 +749,7 @@ function Dashboard() {
                             className="dashboard-add-button"
                             data-bs-toggle="modal"
                             data-bs-target="#add-lead-modal"
+                            onClick={handleOpenAddLead}
                         >
                             <i className="bi bi-plus-lg" aria-hidden="true"></i>
                             <span>Add Lead</span>
@@ -756,14 +808,24 @@ function Dashboard() {
                                                 </td>
                                                 <td>{lead.assignedTo}</td>
                                                 <td>
-                                                    <button
-                                                        type="button"
-                                                        className="dashboard-delete-button"
-                                                        onClick={() => handleDeleteLead(lead._id)}
-                                                    >
-                                                        <i className="bi bi-trash3-fill" aria-hidden="true"></i>
-                                                        <span>Delete</span>
-                                                    </button>
+                                                    <div className="dashboard-row-actions">
+                                                        <button
+                                                            type="button"
+                                                            className="dashboard-update-button"
+                                                            onClick={() => handleUpdateLead(lead)}
+                                                        >
+                                                            <i className="bi bi-pencil-square" aria-hidden="true"></i>
+                                                            <span>Update</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="dashboard-delete-button"
+                                                            onClick={() => handleDeleteLead(lead._id)}
+                                                        >
+                                                            <i className="bi bi-trash3-fill" aria-hidden="true"></i>
+                                                            <span>Delete</span>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -865,9 +927,9 @@ function Dashboard() {
                             <div className="modal-header dashboard-modal-header">
                                 <div>
                                     <h2 className="modal-title" id="add-lead-title">
-                                        Add Lead
+                                        {leadModalTitle}
                                     </h2>
-                                    <p>Create a new contact record.</p>
+                                    <p>{leadModalDescription}</p>
                                 </div>
 
                                 <button
@@ -973,8 +1035,11 @@ function Dashboard() {
                                         className="btn dashboard-add-button"
                                         disabled={Boolean(processingLabel)}
                                     >
-                                        <i className="bi bi-plus-lg" aria-hidden="true"></i>
-                                        <span>Add Lead</span>
+                                        <i
+                                            className={`bi ${isEditingLead ? "bi-pencil-square" : "bi-plus-lg"}`}
+                                            aria-hidden="true"
+                                        ></i>
+                                        <span>{leadSubmitLabel}</span>
                                     </button>
                                 </div>
                             </form>

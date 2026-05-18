@@ -111,18 +111,6 @@ function Login() {
 
         <div className="login-form login-form--signup">
           <h2>Create Account</h2>
-          <div className="login-sso" aria-label="Social signup options">
-            <button type="button" aria-label="Continue with Facebook">
-              <i className="bi bi-facebook" aria-hidden="true"></i>
-            </button>
-            <button type="button" aria-label="Continue with Twitter">
-              <i className="bi bi-twitter-x" aria-hidden="true"></i>
-            </button>
-            <button type="button" aria-label="Continue with LinkedIn">
-              <i className="bi bi-linkedin" aria-hidden="true"></i>
-            </button>
-          </div>
-          <p>Or use your email address</p>
 
           <form onSubmit={handleSignupSubmit}>
             <input
@@ -166,18 +154,7 @@ function Login() {
 
         <div className="login-form login-form--signin">
           <h2>Sign In</h2>
-          <div className="login-sso" aria-label="Social signin options">
-            <button type="button" aria-label="Continue with Facebook">
-              <i className="bi bi-facebook" aria-hidden="true"></i>
-            </button>
-            <button type="button" aria-label="Continue with Twitter">
-              <i className="bi bi-twitter-x" aria-hidden="true"></i>
-            </button>
-            <button type="button" aria-label="Continue with LinkedIn">
-              <i className="bi bi-linkedin" aria-hidden="true"></i>
-            </button>
-          </div>
-          <p>Or use your email address</p>
+          
 
           <form onSubmit={handleLoginSubmit}>
             <input
@@ -207,12 +184,12 @@ function Login() {
           </form>
         </div>
       </section>
-        <Notification
-          visible={notification.visible}
-          message={notification.message}
-          tone={notification.tone}
-          onClose={() => setNotification({ visible: false, message: "", tone: "info" })}
-        />
+      <Notification
+        visible={notification.visible}
+        message={notification.message}
+        tone={notification.tone}
+        onClose={() => setNotification({ visible: false, message: "", tone: "info" })}
+      />
     </main>
   );
 }
