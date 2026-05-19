@@ -27,6 +27,8 @@ function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [processingLabel, setProcessingLabel] = useState("");
   const [notification, setNotification] = useState({ visible: false, message: "", tone: "info" });
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
 
   const showNotification = (message, tone = "info") => {
     setNotification({ visible: true, message, tone });
@@ -131,15 +133,26 @@ function Login() {
               autoComplete="email"
               required
             />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={signupData.password}
-              onChange={handleSignupChange}
-              autoComplete="new-password"
-              required
-            />
+            <div className="login-password-field">
+              <input
+                type={showSignupPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={signupData.password}
+                onChange={handleSignupChange}
+                autoComplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                className="login-password-toggle"
+                onClick={() => setShowSignupPassword((currentValue) => !currentValue)}
+                aria-label={showSignupPassword ? "Hide signup password" : "Show signup password"}
+                aria-pressed={showSignupPassword}
+              >
+                <i className={`bi ${showSignupPassword ? "bi-eye-slash" : "bi-eye"}`} aria-hidden="true"></i>
+              </button>
+            </div>
             <button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "PLEASE WAIT" : "SIGN UP"}
             </button>
@@ -154,8 +167,6 @@ function Login() {
 
         <div className="login-form login-form--signin">
           <h2>Sign In</h2>
-          
-
           <form onSubmit={handleLoginSubmit}>
             <input
               type="email"
@@ -166,15 +177,26 @@ function Login() {
               autoComplete="email"
               required
             />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={loginData.password}
-              onChange={handleLoginChange}
-              autoComplete="current-password"
-              required
-            />
+            <div className="login-password-field">
+              <input
+                type={showLoginPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={loginData.password}
+                onChange={handleLoginChange}
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="login-password-toggle"
+                onClick={() => setShowLoginPassword((currentValue) => !currentValue)}
+                aria-label={showLoginPassword ? "Hide login password" : "Show login password"}
+                aria-pressed={showLoginPassword}
+              >
+                <i className={`bi ${showLoginPassword ? "bi-eye-slash" : "bi-eye"}`} aria-hidden="true"></i>
+              </button>
+            </div>
             <button type="button" className="login-forgot">
               Forgot password?
             </button>
@@ -195,4 +217,3 @@ function Login() {
 }
 
 export default Login;
-

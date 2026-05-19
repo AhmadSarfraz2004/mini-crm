@@ -294,6 +294,47 @@
   box-shadow: 0 0 0 3px rgba(124, 92, 191, 0.08);
 }
 
+.login-password-field {
+  position: relative;
+  width: 100%;
+}
+
+.login-password-field input {
+  padding-right: 48px;
+}
+
+.login-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition:
+    color 0.2s var(--easing),
+    background 0.2s var(--easing);
+}
+
+.login-password-toggle:hover,
+.login-password-toggle:focus-visible {
+  color: var(--accent-dark);
+  background: rgba(124, 92, 191, 0.1);
+}
+
+.login-password-toggle:focus-visible {
+  outline: 2px solid rgba(124, 92, 191, 0.38);
+  outline-offset: 2px;
+}
+
 .login-forgot {
   align-self: center;
   border: 0;
