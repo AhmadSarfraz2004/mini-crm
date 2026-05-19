@@ -68,47 +68,47 @@
     translate var(--duration) var(--easing-panel);
 }
 
-.login-hero--signup {
+.login-hero-signup {
   opacity: 1;
   visibility: visible;
   translate: 0;
 }
 
-.login-hero--signin {
+.login-hero-signin {
   left: 50%;
   translate: 25% 0;
 }
 
-.login-form--signup {
+.login-form-signup {
   left: 50%;
   opacity: 1;
   visibility: visible;
   translate: 0;
 }
 
-.login-form--signin {
+.login-form-signin {
   translate: 50% 0;
 }
 
-.login-toggle:checked ~ .login-hero--signup {
+.login-toggle:checked ~ .login-hero-signup {
   opacity: 0;
   visibility: hidden;
   translate: -25% 0;
 }
 
-.login-toggle:checked ~ .login-hero--signin {
+.login-toggle:checked ~ .login-hero-signin {
   opacity: 1;
   visibility: visible;
   translate: 0;
 }
 
-.login-toggle:checked ~ .login-form--signup {
+.login-toggle:checked ~ .login-form-signup {
   opacity: 0;
   visibility: hidden;
   translate: -50% 0;
 }
 
-.login-toggle:checked ~ .login-form--signin {
+.login-toggle:checked ~ .login-form-signin {
   opacity: 1;
   visibility: visible;
   translate: 0;
@@ -420,7 +420,7 @@
     padding: 28px;
   }
 
-  .login-hero--signin {
+  .login-hero-signin {
     left: 0;
   }
 
@@ -430,15 +430,15 @@
     padding: 26px;
   }
 
-  .login-form--signup {
+  .login-form-signup {
     left: 0;
   }
 
-  .login-toggle:checked ~ .login-form--signup {
+  .login-toggle:checked ~ .login-form-signup {
     translate: -35% 0;
   }
 
-  .login-form--signin {
+  .login-form-signin {
     translate: 35% 0;
   }
 

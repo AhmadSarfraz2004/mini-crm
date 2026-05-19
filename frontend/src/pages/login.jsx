@@ -105,13 +105,13 @@ function Login() {
         <input type="checkbox" id="auth-toggle" className="login-toggle" />
         <div className="login-card-bg" aria-hidden="true"></div>
 
-        <div className="login-hero login-hero--signup">
+        <div className="login-hero login-hero-signup">
           <h2>Welcome Back!</h2>
           <p>Sign in to review your latest leads and customer activity.</p>
           <label htmlFor="auth-toggle">SIGN IN</label>
         </div>
 
-        <div className="login-form login-form--signup">
+        <div className="login-form login-form-signup">
           <h2>Create Account</h2>
 
           <form onSubmit={handleSignupSubmit}>
@@ -159,13 +159,13 @@ function Login() {
           </form>
         </div>
 
-        <div className="login-hero login-hero--signin">
+        <div className="login-hero login-hero-signin">
           <h2>Hey There!</h2>
           <p>Begin your CRM journey and keep every lead moving forward.</p>
           <label htmlFor="auth-toggle">SIGN UP</label>
         </div>
 
-        <div className="login-form login-form--signin">
+        <div className="login-form login-form-signin">
           <h2>Sign In</h2>
           <form onSubmit={handleLoginSubmit}>
             <input
