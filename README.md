@@ -169,7 +169,7 @@ mini-crm/
 ## 1. Clone Repository
 
 ```bash
-git clone YOUR_REPOSITORY_URL
+git clone https://github.com/AhmadSarfraz2004/mini-crm.git
 ```
 
 ---
