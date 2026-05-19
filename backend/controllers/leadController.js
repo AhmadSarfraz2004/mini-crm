@@ -57,13 +57,18 @@ const getLeadIdValues = (id) => {
     return values;
 };
 
-const getLeadIdFilter = (id) => ({
+const getLeadIdFilter = (id, userId) => ({
     _id: {
         $in: getLeadIdValues(id)
-    }
+    },
+    user: userId
 });
 
-const findDuplicateLead = (values, excludedLeadId, fields = duplicateCheckedFields) => {
+const getUserLeadQuery = (userId) => ({
+    user: userId
+});
+
+const findDuplicateLead = (values, excludedLeadId, userId, fields = duplicateCheckedFields) => {
     const duplicateChecks = fields
         .filter((field) => values[field])
         .map((field) => ({ [field]: values[field] }));
@@ -73,6 +78,7 @@ const findDuplicateLead = (values, excludedLeadId, fields = duplicateCheckedFiel
     }
 
     const query = {
+        user: userId,
         $or: duplicateChecks
     };
 
@@ -83,11 +89,11 @@ const findDuplicateLead = (values, excludedLeadId, fields = duplicateCheckedFiel
     return Lead.collection.findOne(query);
 };
 
-const findLeadById = (id) => Lead.collection.findOne(getLeadIdFilter(id));
+const findLeadById = (id, userId) => Lead.collection.findOne(getLeadIdFilter(id, userId));
 
-const updateLeadById = async (id, values) => {
+const updateLeadById = async (id, userId, values) => {
     const result = await Lead.collection.findOneAndUpdate(
-        getLeadIdFilter(id),
+        getLeadIdFilter(id, userId),
         {
             $set: {
                 ...values,
@@ -100,8 +106,8 @@ const updateLeadById = async (id, values) => {
     return result?.value || result;
 };
 
-const deleteLeadById = async (id) => {
-    const result = await Lead.collection.findOneAndDelete(getLeadIdFilter(id));
+const deleteLeadById = async (id, userId) => {
+    const result = await Lead.collection.findOneAndDelete(getLeadIdFilter(id, userId));
 
     return result?.value || result;
 };
@@ -132,7 +138,7 @@ const createLead = async (req, res) => {
             });
         }
 
-        const duplicateLead = await findDuplicateLead(values);
+        const duplicateLead = await findDuplicateLead(values, null, req.user._id);
 
         if (duplicateLead) {
             return res.status(409).json({
@@ -141,7 +147,10 @@ const createLead = async (req, res) => {
             });
         }
 
-        const lead = await Lead.create(values);
+        const lead = await Lead.create({
+            ...values,
+            user: req.user._id
+        });
 
         res.status(201).json(lead);
     } catch (error) {
@@ -161,7 +170,7 @@ const updateLead = async (req, res) => {
             });
         }
 
-        const existingLead = await findLeadById(req.params.id);
+        const existingLead = await findLeadById(req.params.id, req.user._id);
 
         if (!existingLead) {
             return res.status(404).json({ message: "Lead not found" });
@@ -173,6 +182,7 @@ const updateLead = async (req, res) => {
         const duplicateLead = await findDuplicateLead(
             values,
             req.params.id,
+            req.user._id,
             changedDuplicateFields
         );
 
@@ -183,7 +193,7 @@ const updateLead = async (req, res) => {
             });
         }
 
-        const lead = await updateLeadById(req.params.id, values);
+        const lead = await updateLeadById(req.params.id, req.user._id, values);
 
         res.status(200).json(lead);
     } catch (error) {
@@ -198,7 +208,8 @@ const getLeads = async (req, res) => {
         const limit = 5;
         const search = String(req.query.search || '').trim();
         const status = String(req.query.status || '').trim();
-        const query = {};
+        const userLeadQuery = getUserLeadQuery(req.user._id);
+        const query = { ...userLeadQuery };
 
         if (search) {
             const searchRegex = new RegExp(escapeRegExp(search), 'i');
@@ -222,11 +233,11 @@ const getLeads = async (req, res) => {
             lostLeadStats
         ] = await Promise.all([
             Lead.countDocuments(query),
-            Lead.countDocuments(),
-            Lead.countDocuments({ status: /^New$/i }),
-            Lead.countDocuments({ status: /^Contacted$/i }),
-            Lead.countDocuments({ status: /^Converted$/i }),
-            Lead.countDocuments({ status: /^Lost$/i })
+            Lead.countDocuments(userLeadQuery),
+            Lead.countDocuments({ ...userLeadQuery, status: /^New$/i }),
+            Lead.countDocuments({ ...userLeadQuery, status: /^Contacted$/i }),
+            Lead.countDocuments({ ...userLeadQuery, status: /^Converted$/i }),
+            Lead.countDocuments({ ...userLeadQuery, status: /^Lost$/i })
         ]);
         const totalPages = Math.max(Math.ceil(totalLeads / limit), 1);
 
@@ -260,6 +271,7 @@ const updateLeadStatus = async (req, res) => {
 
         const lead = await updateLeadById(
             req.params.id,
+            req.user._id,
             { status }
         );
 
@@ -276,7 +288,7 @@ const updateLeadStatus = async (req, res) => {
 // DELETE LEAD
 const deleteLead = async (req, res) => {
     try {
-        const lead = await deleteLeadById(req.params.id);
+        const lead = await deleteLeadById(req.params.id, req.user._id);
 
         if (!lead) {
             return res.status(404).json({ message: "Lead not found" });

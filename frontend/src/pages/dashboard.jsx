@@ -17,6 +17,7 @@ const getLeadId = (lead) => lead?._id || lead?.id || "";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^\d{11}$/;
+const searchDebounceMs = 400;
 
 const validateLeadForm = (data) => {
     const values = {
@@ -64,6 +65,7 @@ function Dashboard() {
     const [profileUser] = useState(getStoredUser);
     const [leads, setLeads] = useState([]);
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [processingLabel, setProcessingLabel] = useState("");
@@ -220,7 +222,7 @@ function Dashboard() {
     };
 
     const getLeadFilters = () => ({
-        search: search.trim(),
+        search: debouncedSearch,
         statusFilter,
     });
 
@@ -476,10 +478,6 @@ function Dashboard() {
     const handleSearchChange = (event) => {
         setSearch(event.target.value);
         setOpenStatusDropdown(null);
-
-        if (currentPage !== 1) {
-            setCurrentPage(1);
-        }
     };
 
     const handleStatusFilterChange = (nextStatus) => {
@@ -523,13 +521,22 @@ function Dashboard() {
     ];
 
     useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setDebouncedSearch(search.trim());
+            setCurrentPage((page) => (page === 1 ? page : 1));
+        }, searchDebounceMs);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [search]);
+
+    useEffect(() => {
         queueMicrotask(() => {
             fetchLeads(currentPage, {
-                search: search.trim(),
+                search: debouncedSearch,
                 statusFilter,
             });
         });
-    }, [currentPage, fetchLeads, search, statusFilter]);
+    }, [currentPage, debouncedSearch, fetchLeads, statusFilter]);
 
     useEffect(() => {
         document.body.classList.toggle("dashboard-navigation-open", isSidebarOpen);
