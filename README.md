@@ -2,67 +2,121 @@
 
 Technical Assignment for Naxape – MERN Stack Intern
 
-## 📌 Objective
-Build a Lead Management System where authenticated users can:
-- Add leads  
-- Track lead status  
-- Assign leads  
-- View basic analytics  
+---
+
+# 📌 Project Overview
+
+Mini CRM is a full-stack MERN application that allows authenticated users to manage leads efficiently.
+
+Users can:
+- Register and login securely using JWT authentication
+- Create and manage leads
+- Track lead status
+- Search and filter leads
+- View paginated lead records
+- Assign leads
+- Manage their own leads securely
 
 ---
 
-## Tech Stack
-- MongoDB
-- Express.js
+# 🚀 Live Demo
+
+## URL
+https://mini-crm-9jby.vercel.app/
+
+---
+
+# 🛠 Tech Stack
+
+## Frontend
 - React.js
+- Axios
+- CSS3
+
+## Backend
 - Node.js
+- Express.js
 - JWT Authentication
+- bcryptjs
 
-## ✨ Features Implemented
+## Database
+- MongoDB Atlas
+- Mongoose
 
-### 🔐 Authentication
+## Deployment
+- Vercel
+- GitHub CI/CD
+
+---
+
+# ✨ Features Implemented
+
+## 🔐 Authentication
 - User Registration
 - User Login
-- JWT Token based protected routes
+- JWT Token Authentication
+- Protected Routes
 
 ---
 
-### 📊 Lead Management
-Users can:
+## 📊 Lead Management
 
-- Create new leads  
-- View all leads with pagination  
-- Search leads by name/email  
-- Filter leads by status  
-- Update lead status  
-- Delete leads  
-- Assign leads  
+Authenticated users can:
 
-**Lead Status Options**
+- Create new leads
+- View paginated leads
+- Search leads
+- Filter leads by status
+- Update lead status
+- Delete leads
+- Assign leads
+
+---
+
+## 🔎 Search & Filtering
+- Search by:
+  - Name
+  - Email
+  - Phone
+- Filter by lead status
+- Backend-powered filtering and pagination
+
+---
+
+## 📄 Pagination
+- Paginated lead listing
+- Dynamic page navigation
+- Backend-based pagination handling
+
+---
+
+## 👤 User-Specific Lead Ownership
+- Each authenticated user can only:
+  - View their own leads
+  - Update their own leads
+  - Delete their own leads
+- Lead ownership is protected using JWT middleware
+
+---
+
+# 📈 Lead Status Options
+
 - New
 - Contacted
 - Converted
+- Lost
 
 ---
 
-## 🗄 Lead Model
+# 📂 Project Structure
 
-```js
-{
-  name: String,
-  email: String,
-  phone: String,
-  status: "new" | "contacted" | "converted",
-  assignedTo: String,
-  createdAt: Date
-}
-
----
-
-## Project Structure
+```txt
 mini-crm/
 │
 ├── backend/
+│   ├── api/
+│   │   └── index.js
+│   │
 │   ├── config/
 │   │   └── db.js
 │   │
@@ -83,17 +137,118 @@ mini-crm/
 │   │
 │   ├── .env
 │   ├── server.js
+│   ├── vercel.json
 │   ├── package.json
 │   └── package-lock.json
 │
-├── frontend/   (React app will live here)
+├── frontend/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── routes/
+│   │   ├── styles/
+│   │   ├── utils/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   │
+│   ├── .env
+│   ├── vercel.json
+│   ├── package.json
+│   └── vite.config.js
 │
 ├── .gitignore
 └── README.md
-
 ```
+
 ---
 
-## Author
-Ahmad Sarfraz
+# 🧪 Local Development Setup
+
+## 1. Clone Repository
+
+```bash
+git clone YOUR_REPOSITORY_URL
+```
+
+---
+
+## 2. Install Backend Dependencies
+
+```bash
+cd backend
+npm install
+```
+
+---
+
+## 3. Install Frontend Dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+---
+
+## 4. Start Backend Server
+
+```bash
+npm run dev
+```
+
+---
+
+## 5. Start Frontend Server
+
+```bash
+npm run dev
+```
+
+---
+
+# 🔗 API Endpoints
+
+## Authentication
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register user |
+| POST | `/api/auth/login` | Login user |
+
+---
+
+# 🌐 Deployment
+
+Application deployed using:
+
+- Vercel (Frontend + Backend)
+- MongoDB Atlas
+- GitHub CI/CD Integration
+
+Automatic deployment occurs on every push to GitHub.
+
+---
+
+# 📚 Concepts Implemented
+
+- REST APIs
+- JWT Authentication
+- Protected Routes
+- CRUD Operations
+- Pagination
+- Search & Filtering
+- React State Management
+- Axios API Integration
+- MongoDB Relationships
+- Environment Variables
+- CI/CD Deployment
+- Responsive UI
+
+---
+
+# 👨‍💻 Author
+
+Ahmad Sarfraz  
 MERN Stack Intern Candidate – Naxape
